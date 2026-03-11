@@ -4,11 +4,19 @@ import { TbFaceId } from 'react-icons/tb'
 
 type AuthMode = 'password' | 'biometric'
 
+type LoginActivity = {
+  email: string
+  method: 'Parol' | 'Biometrik'
+  device: string
+  time: string
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>('password')
   const [bioLoading, setBioLoading] = useState(false)
   const [bioError, setBioError] = useState<string | null>(null)
+  const [recentLogins, setRecentLogins] = useState<LoginActivity[]>([])
 
   const backendUrl = 'https://fingerprint-dashboard.onrender.com'
 
@@ -188,6 +196,15 @@ function App() {
         return
       }
 
+      const now = new Date()
+      const entry: LoginActivity = {
+        email,
+        method: 'Biometrik',
+        device: 'FaceID / Fingerprint',
+        time: now.toLocaleString(),
+      }
+
+      setRecentLogins((prev) => [entry, ...prev].slice(0, 5))
       setIsAuthenticated(true)
     } catch (error) {
       console.error(error)
@@ -241,7 +258,19 @@ function App() {
                 className="space-y-4"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  // Demo uchun: har doim success
+                  const form = e.currentTarget
+                  const email = (form.elements.namedItem('email') as HTMLInputElement)
+                    ?.value || 'admin@example.com'
+
+                  const now = new Date()
+                  const entry: LoginActivity = {
+                    email,
+                    method: 'Parol',
+                    device: 'Parol · Web',
+                    time: now.toLocaleString(),
+                  }
+
+                  setRecentLogins((prev) => [entry, ...prev].slice(0, 5))
                   setIsAuthenticated(true)
                 }}
               >
@@ -432,18 +461,28 @@ function App() {
                 <span className="text-[11px] text-slate-500">Demo data</span>
               </div>
               <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2">
-                  <span className="text-slate-100">admin@example.com</span>
-                  <span className="text-slate-500">Fingerprint · Tashkent</span>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2">
-                  <span className="text-slate-100">security@example.com</span>
-                  <span className="text-slate-500">FaceID · iPhone</span>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2">
-                  <span className="text-slate-100">mobile@example.com</span>
-                  <span className="text-slate-500">Windows Hello · Laptop</span>
-                </div>
+                {recentLogins.length === 0 ? (
+                  <div className="rounded-xl bg-slate-900 px-3 py-4 text-slate-500 text-[11px]">
+                    Hozircha faol loginlar yo‘q. Avval tizimga kiring.
+                  </div>
+                ) : (
+                  recentLogins.map((item) => (
+                    <div
+                      key={`${item.email}-${item.time}-${item.method}`}
+                      className="flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-slate-100">{item.email}</span>
+                        <span className="text-slate-500 text-[11px]">
+                          {item.time}
+                        </span>
+                      </div>
+                      <span className="text-slate-400">
+                        {item.method} · {item.device}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
