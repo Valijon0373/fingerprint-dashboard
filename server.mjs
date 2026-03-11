@@ -12,12 +12,11 @@ import { v4 as uuidv4 } from 'uuid'
 const app = express()
 const port = 4000
 
-// Relying Party (RP) ma'lumotlari:
-// RP_ID: faqat host qismi (masalan: fingerprint-admin.vercel.app)
-// EXPECTED_ORIGIN: to'liq origin (masalan: https://fingerprint-admin.vercel.app)
-const rpName = process.env.RP_NAME || 'FingerPrint Admin Demo'
-const rpID = process.env.RP_ID || 'localhost'
-const expectedOrigin = process.env.EXPECTED_ORIGIN || 'http://localhost:5173'
+// Relying Party (RP) ma'lumotlari (prod uchun to'g'ridan-to'g'ri yozib qo'yamiz)
+// Frontend domening: https://fingerprint-dashboard-sable.vercel.app
+const rpName = 'FingerPrint Admin'
+const rpID = 'fingerprint-dashboard-sable.vercel.app'
+const expectedOrigin = 'https://fingerprint-dashboard-sable.vercel.app'
 
 app.use(
   cors({
@@ -26,20 +25,17 @@ app.use(
         // Dev
         'http://localhost:5173',
         'http://localhost:3000',
-        // Prod (env orqali)
-        process.env.FRONTEND_ORIGIN,
-        process.env.EXPECTED_ORIGIN,
-      ].filter(Boolean)
+        // Prod
+        'https://fingerprint-dashboard-sable.vercel.app',
+      ]
 
-      // Postman / server-side requestlar uchun origin bo'lmasligi mumkin
-      if (!origin) {
+      // origin bo'lmasa ham (masalan, Postman) ruxsat beramiz
+      if (!origin) return callback(null, true)
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true)
       } else {
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true)
-        } else {
-          callback(new Error('Not allowed by CORS'))
-        }
+        callback(new Error('Not allowed by CORS'))
       }
     },
     credentials: true,
