@@ -63,26 +63,31 @@ function getUser(email) {
 }
 
 app.post('/webauthn/register/options', (req, res) => {
-  const { email } = req.body
-  if (!email) {
-    return res.status(400).json({ error: 'email required' })
+  try {
+    const { email } = req.body
+    if (!email) {
+      return res.status(400).json({ error: 'email required' })
+    }
+    const user = getUser(email)
+
+    const options = generateRegistrationOptions({
+      rpName,
+      rpID,
+      userID: Buffer.from(user.webauthnId, 'base64url'),
+      userName: user.email,
+      attestationType: 'none',
+      authenticatorSelection: {
+        residentKey: 'preferred',
+        userVerification: 'preferred',
+      },
+    })
+
+    user.currentChallenge = options.challenge
+    return res.json(options)
+  } catch (e) {
+    console.error('Error in /webauthn/register/options:', e)
+    return res.status(500).json({ error: 'register_options_failed', message: e.message })
   }
-  const user = getUser(email)
-
-  const options = generateRegistrationOptions({
-    rpName,
-    rpID,
-    userID: Buffer.from(user.webauthnId, 'base64url'),
-    userName: user.email,
-    attestationType: 'none',
-    authenticatorSelection: {
-      residentKey: 'preferred',
-      userVerification: 'preferred',
-    },
-  })
-
-  user.currentChallenge = options.challenge
-  return res.json(options)
 })
 
 app.post('/webauthn/register/verify', async (req, res) => {
