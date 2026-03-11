@@ -10,7 +10,7 @@ function App() {
   const [bioLoading, setBioLoading] = useState(false)
   const [bioError, setBioError] = useState<string | null>(null)
 
-  const backendUrl = 'https://finger-backend.onrender.com'
+  const backendUrl = 'https://fingerprint-dashboard.onrender.com'
 
   function base64urlToBuffer(base64url?: string): Uint8Array {
     if (!base64url) {
