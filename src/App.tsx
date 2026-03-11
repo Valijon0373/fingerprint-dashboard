@@ -54,7 +54,21 @@ function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         })
+
+        if (!regOptsRes.ok) {
+          const text = await regOptsRes.text()
+          console.error('Register options error response:', text)
+          setBioError('Serverdan noto‘g‘ri javob keldi (register options)')
+          return
+        }
+
         const regOpts = await regOptsRes.json()
+
+        if (!regOpts.challenge || !regOpts.user?.id) {
+          console.error('Register options missing fields:', regOpts)
+          setBioError('Serverdan noto‘g‘ri maʼlumot keldi (register options)')
+          return
+        }
 
         regOpts.challenge = base64urlToBuffer(regOpts.challenge).buffer
         regOpts.user.id = base64urlToBuffer(regOpts.user.id).buffer
@@ -106,14 +120,28 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-        const authOpts = await authOptsRes.json()
 
-        authOpts.challenge = base64urlToBuffer(authOpts.challenge).buffer
+      if (!authOptsRes.ok) {
+        const text = await authOptsRes.text()
+        console.error('Login options error response:', text)
+        setBioError('Serverdan noto‘g‘ri javob keldi (login options)')
+        return
+      }
+
+      const authOpts = await authOptsRes.json()
+
+      if (!authOpts.challenge) {
+        console.error('Login options missing challenge:', authOpts)
+        setBioError('Serverdan noto‘g‘ri maʼlumot keldi (login options)')
+        return
+      }
+
+      authOpts.challenge = base64urlToBuffer(authOpts.challenge).buffer
       if (authOpts.allowCredentials) {
-          authOpts.allowCredentials = authOpts.allowCredentials.map((c: any) => ({
-            ...c,
-            id: base64urlToBuffer(c.id).buffer,
-          }))
+        authOpts.allowCredentials = authOpts.allowCredentials.map((c: any) => ({
+          ...c,
+          id: base64urlToBuffer(c.id).buffer,
+        }))
       }
 
       const assertion = (await navigator.credentials.get({
