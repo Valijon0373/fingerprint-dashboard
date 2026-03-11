@@ -13,10 +13,11 @@ const app = express()
 const port = 4000
 
 // Relying Party (RP) ma'lumotlari (prod uchun to'g'ridan-to'g'ri yozib qo'yamiz)
-// Frontend domening: https://fingerprint-dashboard-sable.vercel.app
+// Frontend domening (brauzerda ishlatayotgan haqiqiy URL):
+//   https://fingerprint.vercel.app
 const rpName = 'FingerPrint Admin'
-const rpID = 'fingerprint-dashboard-sable.vercel.app'
-const expectedOrigin = 'https://fingerprint-dashboard-sable.vercel.app'
+const rpID = 'fingerprint.vercel.app'
+const expectedOrigin = 'https://fingerprint.vercel.app'
 
 app.use(
   cors({
@@ -25,7 +26,8 @@ app.use(
         // Dev
         'http://localhost:5173',
         'http://localhost:3000',
-        // Prod
+        // Prod (ikkala Vercel domeningni ham qo'yamiz)
+        'https://fingerprint.vercel.app',
         'https://fingerprint-dashboard-sable.vercel.app',
       ]
 
