@@ -18,7 +18,9 @@ function App() {
   const [bioError, setBioError] = useState<string | null>(null)
   const [recentLogins, setRecentLogins] = useState<LoginActivity[]>([])
 
-  const backendUrl = 'https://fingerprint-dashboard.onrender.com'
+  // Configure via Vite env: VITE_BACKEND_URL=http://localhost:4000
+  const backendUrl =
+    (import.meta as any).env?.VITE_BACKEND_URL?.toString?.() || ''
 
   function base64urlToBuffer(base64url?: string): Uint8Array {
     if (!base64url) {
@@ -45,6 +47,13 @@ function App() {
     try {
       setBioLoading(true)
       setBioError(null)
+
+      if (!backendUrl) {
+        setBioError(
+          'Backend URL topilmadi. Vercel’da VITE_BACKEND_URL ni Render backend URL ga sozlang (https://...).',
+        )
+        return
+      }
 
       const emailInput = document.getElementById('email') as HTMLInputElement | null
       const email = emailInput?.value || 'admin@example.com'

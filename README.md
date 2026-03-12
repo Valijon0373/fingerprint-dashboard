@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# Fingerprint dashboard (WebAuthn demo)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This repo contains:
+- A Vite + React UI
+- A small Express backend that exposes WebAuthn endpoints (powered by `@simplewebauthn/server`)
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Install deps:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm i
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Start backend:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm run server
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Start frontend (new terminal):
+
+```bash
+npm run dev
+```
+
+## Environment variables
+
+### Frontend (Vite)
+
+- `VITE_BACKEND_URL` (required in production; local default: `http://localhost:4000`)
+
+### Backend (Express)
+
+- `RP_NAME` (default: `FingerPrint Admin`)
+- `RP_ID` (local default: `localhost`; **production: your real domain host** like `your-app.vercel.app`)
+- `EXPECTED_ORIGIN` (local default: `http://localhost:5173`; **production: your real origin** like `https://your-app.vercel.app`)
+- `ALLOWED_ORIGINS` (default: `http://localhost:5173,http://localhost:3000`; **production: include your Vercel origin(s)**)
+
+If you deploy the frontend/backend to real domains, you MUST set these correctly (WebAuthn is strict):
+
+- **Vercel (frontend)**: set `VITE_BACKEND_URL` to your Render backend HTTPS URL.
+- **Render (backend)**:
+  - set `ALLOWED_ORIGINS` to your Vercel site origin(s) (comma-separated)
+  - set `EXPECTED_ORIGIN` to your Vercel site origin (or leave empty and rely on `Origin`, as long as it’s in `ALLOWED_ORIGINS`)
+  - set `RP_ID` to your Vercel site host (no protocol) (or leave empty and rely on `Origin` host, as long as it’s in `ALLOWED_ORIGINS`)
 ```

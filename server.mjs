@@ -10,26 +10,58 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 
 const app = express()
-const port = 4000
+const port = Number(process.env.PORT || 4000)
 
-// Relying Party (RP) ma'lumotlari (prod uchun to'g'ridan-to'g'ri yozib qo'yamiz)
-// Frontend domening (brauzerda ishlatayotgan haqiqiy URL):
-//   https://fingerprint.vercel.app
-const rpName = 'FingerPrint Admin'
-const rpID = 'fingerprint.vercel.app'
-const expectedOrigin = 'https://fingerprint.vercel.app'
+// Relying Party (RP) configuration.
+// - For local dev: RP_ID=localhost, EXPECTED_ORIGIN=http://localhost:5173
+// - For prod: set RP_ID/EXPECTED_ORIGIN to your actual domain/origin.
+const rpName = process.env.RP_NAME || 'FingerPrint Admin'
+const staticRpID = process.env.RP_ID || ''
+const staticExpectedOrigin = process.env.EXPECTED_ORIGIN || ''
+
+function parseAllowedOrigins() {
+  return (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function getRequestOrigin(req) {
+  const origin = req.headers.origin
+  return typeof origin === 'string' ? origin : undefined
+}
+
+function resolveExpectedOrigin(req) {
+  // Prefer explicit config; otherwise use the request Origin (if allowed).
+  if (staticExpectedOrigin) return staticExpectedOrigin
+
+  const origin = getRequestOrigin(req)
+  if (!origin) return undefined
+
+  const allowedOrigins = parseAllowedOrigins()
+  if (!allowedOrigins.includes(origin)) return undefined
+
+  return origin
+}
+
+function resolveRpID(req) {
+  // Prefer explicit config; otherwise derive from the allowed request Origin host.
+  if (staticRpID) return staticRpID
+
+  const origin = resolveExpectedOrigin(req)
+  if (!origin) return undefined
+
+  try {
+    return new URL(origin).hostname
+  } catch {
+    return undefined
+  }
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigins = [
-        // Dev
-        'http://localhost:5173',
-        'http://localhost:3000',
-        // Prod (ikkala Vercel domeningni ham qo'yamiz)
-        'https://fingerprint.vercel.app',
-        'https://fingerprint-dashboard-sable.vercel.app',
-      ]
+      const allowedOrigins = parseAllowedOrigins()
 
       // origin bo'lmasa ham (masalan, Postman) ruxsat beramiz
       if (!origin) return callback(null, true)
@@ -70,6 +102,15 @@ app.post('/webauthn/register/options', (req, res) => {
     }
     const user = getUser(email)
 
+    const rpID = resolveRpID(req)
+    if (!rpID) {
+      return res.status(400).json({
+        error: 'rp_id_not_configured',
+        message:
+          'RP_ID is not configured and could not be derived from an allowed Origin. Set RP_ID and ALLOWED_ORIGINS for production.',
+      })
+    }
+
     const options = generateRegistrationOptions({
       rpName,
       rpID,
@@ -98,6 +139,16 @@ app.post('/webauthn/register/verify', async (req, res) => {
   const user = getUser(email)
 
   try {
+    const expectedOrigin = resolveExpectedOrigin(req)
+    const rpID = resolveRpID(req)
+    if (!expectedOrigin || !rpID) {
+      return res.status(400).json({
+        verified: false,
+        error:
+          'origin_or_rpid_not_configured: set EXPECTED_ORIGIN and RP_ID (or configure ALLOWED_ORIGINS so they can be derived)',
+      })
+    }
+
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: user.currentChallenge,
@@ -133,6 +184,15 @@ app.post('/webauthn/login/options', (req, res) => {
   }
   const user = getUser(email)
 
+  const rpID = resolveRpID(req)
+  if (!rpID) {
+    return res.status(400).json({
+      error: 'rp_id_not_configured',
+      message:
+        'RP_ID is not configured and could not be derived from an allowed Origin. Set RP_ID and ALLOWED_ORIGINS for production.',
+    })
+  }
+
   const options = generateAuthenticationOptions({
     rpID,
     userVerification: 'preferred',
@@ -158,6 +218,16 @@ app.post('/webauthn/login/verify', async (req, res) => {
   )
 
   try {
+    const expectedOrigin = resolveExpectedOrigin(req)
+    const rpID = resolveRpID(req)
+    if (!expectedOrigin || !rpID) {
+      return res.status(400).json({
+        verified: false,
+        error:
+          'origin_or_rpid_not_configured: set EXPECTED_ORIGIN and RP_ID (or configure ALLOWED_ORIGINS so they can be derived)',
+      })
+    }
+
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: user.currentChallenge,
@@ -183,6 +253,6 @@ app.post('/webauthn/login/verify', async (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(`WebAuthn backend listening at http://localhost:${port}`)
+  console.log(`WebAuthn backend listening on port ${port}`)
 })
 
