@@ -77,6 +77,14 @@ app.use(
 )
 app.use(express.json({ limit: '1mb' }))
 
+app.get('/', (_req, res) => {
+  return res.status(200).send('OK: WebAuthn API is running.')
+})
+
+app.get('/healthz', (_req, res) => {
+  return res.status(200).json({ ok: true })
+})
+
 // In-memory user store (demo only)
 const users = new Map()
 
